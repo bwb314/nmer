@@ -2,15 +2,6 @@ import sys
 from itertools import combinations
 #import psi4
 
-geo_fil = sys.argv[1]
-with open(geo_fil,'r') as fil: 
-    n = int(next(fil))
-    next(fil)
-    geom = []
-    for i in range(n):
-        atom = next(fil).split()
-        for i in range(1,4): atom[i] = float(atom[i])
-        geom.append(atom)
 
 cov_rad = {   'H' : 0.37, 'C' : 0.77, 'O' : 0.73, 'N' : 0.75, 'F' : 0.71,
   'P' : 1.10, 'S' : 1.03, 'Cl': 0.99, 'Br': 1.14, 'I' : 1.33, 'He': 0.30,
@@ -69,8 +60,6 @@ def frag2str(frag):
         newfrag += el + coords + '\n'
     return newfrag
 
-frags = bfs(geom)
-geoms = [frag2str(i) for i in frags]
 
 def rmsd(A,B):
     ans = 0.
@@ -90,10 +79,35 @@ def com(A,els):
     return center
 
 import numpy as np
+geo_fil = sys.argv[1]
+with open(geo_fil,'r') as fil: 
+    n = int(next(fil))
+    next(fil)
+    geom = []
+    for i in range(n):
+        atom = next(fil).split()
+        for i in range(1,4): atom[i] = float(atom[i])
+        geom.append(atom)
+frags = bfs(geom)
+geoms = [frag2str(i) for i in frags]
 # make all dimers and print nre
+#temporarily taking in two xyz's
 for i in combinations(geoms,2):
     sys0 = i[0].split('\n')[:-1]
     sys1 = i[1].split('\n')[:-1]
+#for i in range(1):
+#    mol0 = sys.argv[1]
+#    mol1 = sys.argv[2]
+#    sys0 = []
+#    sys1 = []
+#    with open(mol0,'r') as fil:
+#        for lin in fil:
+#            if len(lin.split()) != 4: continue
+#            sys0.append(lin.split('\n')[0])
+#    with open(mol1,'r') as fil:
+#        for lin in fil:
+#            if len(lin.split()) != 4: continue
+#            sys1.append(lin.split('\n')[0])
     nsys0 = [] 
     els0 = []
     for i in sys0: els0.append(i.split()[0].upper())
@@ -110,28 +124,24 @@ for i in combinations(geoms,2):
     #Translate sys1 to com of sys0
     center = com(nsys0,els0)
     center1 = com(nsys1,els1)
-    translateby = [center1[i] - center[i] for i in range(3)] 
     for i in range(len(nsys1)):
-        for j in range(3): nsys1[i][j] -= translateby[j]
+        for j in range(3): 
+            nsys0[i][j] -= center[j]
+            nsys1[i][j] -= center1[j]
 
     #compute cross-covariance matrix
-    H = np.zeros((3,3))
-    A = []
-    B = []
-    for i in range(len(nsys1)):
-        A = np.array([nsys0[i][x]-center[x] for x in range(3)])
-        B = np.array([nsys1[i][x]-center[x] for x in range(3)])
-        H += np.outer(A.T,B)
-
+    H = np.dot(nsys0,np.array(nsys1).T)
     #SVD to get optimal rotation
-    U,s,V = np.linalg.svd(H, full_matrices=False)
-    S = np.diag([1.,1.,np.linalg.det(np.dot(V.T,U.T))])
-    R = np.dot(V.T,np.dot(S,U.T))
-    for i in sys0: print(i)
-    print("")
-    nsys1 = np.dot(nsys1,R)
-    for i in range(len(els1)):
-        print(els1[i],end = " ")
-        for j in range(3): print(nsys1[i][j], end = " ")
-        print("")
-    2/0
+    V,s,W = np.linalg.svd(H)
+    d = np.linalg.det(np.dot(W,V))
+    if d < 0: V[:,-1] *= -1.
+    R = np.dot(V,W) 
+    nsys1 = np.dot(R,nsys1)
+    #for i in range(len(els0)):
+    #    x,y,z = nsys0[i][:]
+    #    print els0[i],x,y,z
+    #for i in range(len(els1)):
+    #    x,y,z = nsys1[i][:]
+    #    print els1[i],x,y,z
+    #print rmsd(nsys0,nsys1)
+    #2/0
