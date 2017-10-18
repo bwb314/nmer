@@ -89,6 +89,7 @@ def com(A,els):
     for c in range(3): center[c] = center[c]/totmass
     return center
 
+import numpy as np
 # make all dimers and print nre
 for i in combinations(geoms,2):
     sys0 = i[0].split('\n')[:-1]
@@ -101,10 +102,36 @@ for i in combinations(geoms,2):
     els1 = []
     for i in sys1: els1.append(i.split()[0].upper())
     for i in sys1: nsys1.append([float(x) for x in i.split()[1:]])
-    for i in range(len(els0)): 
-        if els0[i] != els1[i]: 
-            print("ALL ELEMENTS NEED ALIGN, TECH NOT READY YET")
-            sys.exit()
+    #for i in range(len(els0)): 
+    #    if els0[i] != els1[i]: 
+    #        print("ALL ELEMENTS NEED ALIGN, TECH NOT READY YET")
+    #        sys.exit()
+
     #Translate sys1 to com of sys0
     center = com(nsys0,els0)
-   
+    center1 = com(nsys1,els1)
+    translateby = [center1[i] - center[i] for i in range(3)] 
+    for i in range(len(nsys1)):
+        for j in range(3): nsys1[i][j] -= translateby[j]
+
+    #compute cross-covariance matrix
+    H = np.zeros((3,3))
+    A = []
+    B = []
+    for i in range(len(nsys1)):
+        A = np.array([nsys0[i][x]-center[x] for x in range(3)])
+        B = np.array([nsys1[i][x]-center[x] for x in range(3)])
+        H += np.outer(A.T,B)
+
+    #SVD to get optimal rotation
+    U,s,V = np.linalg.svd(H, full_matrices=False)
+    S = np.diag([1.,1.,np.linalg.det(np.dot(V.T,U.T))])
+    R = np.dot(V.T,np.dot(S,U.T))
+    for i in sys0: print(i)
+    print("")
+    nsys1 = np.dot(nsys1,R)
+    for i in range(len(els1)):
+        print(els1[i],end = " ")
+        for j in range(3): print(nsys1[i][j], end = " ")
+        print("")
+    2/0
