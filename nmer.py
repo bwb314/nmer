@@ -90,58 +90,50 @@ with open(geo_fil,'r') as fil:
         geom.append(atom)
 frags = bfs(geom)
 geoms = [frag2str(i) for i in frags]
+
+for i in range(1):
+    mol0 = sys.argv[1]
+    mol1 = sys.argv[2]
+    sys0 = []
+    sys1 = []
+    with open(mol0,'r') as fil:
+        for lin in fil:
+            if len(lin.split()) != 4: continue
+            sys0.append(lin.split('\n')[0])
+    with open(mol1,'r') as fil:
+        for lin in fil:
+            if len(lin.split()) != 4: continue
+            sys1.append(lin.split('\n')[0])
 # make all dimers and print nre
 #temporarily taking in two xyz's
-for i in combinations(geoms,2):
-    sys0 = i[0].split('\n')[:-1]
-    sys1 = i[1].split('\n')[:-1]
-#for i in range(1):
-#    mol0 = sys.argv[1]
-#    mol1 = sys.argv[2]
-#    sys0 = []
-#    sys1 = []
-#    with open(mol0,'r') as fil:
-#        for lin in fil:
-#            if len(lin.split()) != 4: continue
-#            sys0.append(lin.split('\n')[0])
-#    with open(mol1,'r') as fil:
-#        for lin in fil:
-#            if len(lin.split()) != 4: continue
-#            sys1.append(lin.split('\n')[0])
-    nsys0 = [] 
-    els0 = []
-    for i in sys0: els0.append(i.split()[0].upper())
-    for i in sys0: nsys0.append([float(x) for x in i.split()[1:]])
-    nsys1 = [] 
-    els1 = []
-    for i in sys1: els1.append(i.split()[0].upper())
-    for i in sys1: nsys1.append([float(x) for x in i.split()[1:]])
-    #for i in range(len(els0)): 
-    #    if els0[i] != els1[i]: 
-    #        print("ALL ELEMENTS NEED ALIGN, TECH NOT READY YET")
-    #        sys.exit()
-
-    #Translate sys1 to com of sys0
-    center = com(nsys0,els0)
-    center1 = com(nsys1,els1)
-    for i in range(len(nsys1)):
-        for j in range(3): 
-            nsys0[i][j] -= center[j]
-            nsys1[i][j] -= center1[j]
-
-    #compute cross-covariance matrix
-    H = np.dot(nsys0,np.array(nsys1).T)
-    #SVD to get optimal rotation
-    V,s,W = np.linalg.svd(H)
-    d = np.linalg.det(np.dot(W,V))
-    if d < 0: V[:,-1] *= -1.
-    R = np.dot(V,W) 
-    nsys1 = np.dot(R,nsys1)
-    #for i in range(len(els0)):
-    #    x,y,z = nsys0[i][:]
-    #    print els0[i],x,y,z
-    #for i in range(len(els1)):
-    #    x,y,z = nsys1[i][:]
-    #    print els1[i],x,y,z
-    #print rmsd(nsys0,nsys1)
-    #2/0
+#maxn = 5
+#for n in range(2,maxn+1):
+        nsys0 = [] 
+        els0 = []
+        for i in sys0: els0.append(i.split()[0].upper())
+        for i in sys0: nsys0.append([float(x) for x in i.split()[1:]])
+        nsys1 = [] 
+        els1 = []
+        for i in sys1: els1.append(i.split()[0].upper())
+        for i in sys1: nsys1.append([float(x) for x in i.split()[1:]])
+        #Translate sys1 and sys0 to origin
+        center = com(nsys0,els0)
+        center1 = com(nsys1,els1)
+        for i in range(len(nsys1)):
+            for j in range(3): 
+                nsys0[i][j] -= center[j]
+                nsys1[i][j] -= center1[j]
+        #compute cross-covariance matrix
+        H = np.dot(nsys0,np.array(nsys1).T)
+        #SVD to get optimal rotation
+        V,s,W = np.linalg.svd(H)
+        d = np.linalg.det(np.dot(W,V))
+        if d < 0: V[:,-1] *= -1.
+        R = np.dot(V,W) 
+        #Rotate
+        nsys1 = np.dot(R,nsys1)
+        diff = rmsd(nsys0,nsys1)
+        print(diff)
+        for i in range(len(nsys0)): print els0[i],' '.join(map(str,nsys0[i]))
+        for i in range(len(nsys1)): print els0[i],' '.join(map(str,nsys1[i]))
+        
