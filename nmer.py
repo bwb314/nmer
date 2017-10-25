@@ -251,7 +251,7 @@ def get_nmers(geo_fil_name, N):
                 if not duplicate: unique[i+1].append(mol1)
     return unique, len(geom) 
 
-unis, tot_mons = get_nmers("sulfanilamide.xyz", 3) 
+unis, tot_mons = get_nmers(sys.argv[1], 3) 
 
 uk = sorted(unis.keys())
 
