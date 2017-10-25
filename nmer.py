@@ -155,6 +155,7 @@ def distance(atom1, atom2):
     y = atom1[2]-atom2[2]
     z = atom1[3]-atom2[3]
     d = (x*x + y*y + z*z)**0.5
+    d = 1.88973*d
     return d
 
 temp_symbol = ["X", "H", "HE", "LI", "BE", "B", "C", "N", "O", "F", "NE", "NA", "MG",
